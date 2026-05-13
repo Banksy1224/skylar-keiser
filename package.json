@@ -1,0 +1,18 @@
+{
+  "name": "skylar-chat",
+  "version": "1.0.0",
+  "description": "Skylar — Keiser University mascot chat prototype",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
