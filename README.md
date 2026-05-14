@@ -10,7 +10,11 @@ An interactive chat experience starring **Skylar**, the Keiser University seahaw
 ├── railway.json               # Railway deploy config
 ├── .env.example               # Copy to .env locally
 │
-├── Skylar Chat v2.html        # Main entry — the branded, FAQ-grounded chat
+├── index.html                 # PRODUCTION entry — responsive, with AI disclaimer
+├── skylar-app.jsx             # Production app shell (responsive, disclaimer, ?embed=1)
+├── embed.html                 # Iframe snippet for the institutional website
+│
+├── Skylar Chat v2.html        # Internal /tweaks playground (live brand editor)
 ├── app-v2.jsx                 # App shell + Tweaks panel wiring
 ├── variations-v2.jsx          # The "Meet Skylar" layout
 ├── skylar-chat-v2.jsx         # Chat engine + FAQ retrieval + sources
@@ -36,6 +40,14 @@ cp .env.example .env           # then paste your ANTHROPIC_API_KEY
 npm install
 npm run dev                    # http://localhost:3000
 ```
+
+## Routes
+
+- `/` — production app. Responsive across mobile/tablet/desktop, with a blocking AI disclaimer on first visit (stored in localStorage).
+- `/?embed=1` — same app, no disclaimer modal, no hero (chat only). Use this URL inside the iframe snippet for the institutional website (see `embed.html`).
+- `/tweaks` — internal playground with the live Tweaks panel (brand colors, persona, FAQ JSON). Not linked from anywhere public; share the URL only with people who need it.
+- `/api/complete` — server-side proxy to Anthropic.
+- `/healthz` — Railway healthcheck.
 
 ## Deploy to Railway
 

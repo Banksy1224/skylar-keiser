@@ -1,0 +1,24 @@
+<!--
+  Skylar — embed snippet for the institutional website.
+  Drop the iframe below onto any page on keiseruniversity.edu.
+
+  Key bits:
+  - ?embed=1 strips the disclaimer modal (the host page must surface its own
+    disclaimer, or remove that flag to keep Skylar's built-in one).
+  - height: 720px is a sensible default for desktop. Set to 100vh inside a
+    full-page wrapper, or to a fixed height inside a sidebar.
+  - allow="autoplay" lets the Skylar mascot video loop.
+  - sandbox keeps the embed contained but allows scripts + same-origin AJAX
+    against the parent if you serve from the same domain. Adjust as needed.
+-->
+
+<iframe
+  src="https://skylar-keiser-production.up.railway.app/?embed=1"
+  title="Skylar — Keiser University AI assistant"
+  width="100%"
+  height="720"
+  style="border: 0; border-radius: 12px; max-width: 1100px; display: block; margin: 0 auto;"
+  loading="lazy"
+  allow="autoplay; clipboard-write"
+  referrerpolicy="strict-origin-when-cross-origin"
+></iframe>

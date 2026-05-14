@@ -61,8 +61,14 @@ app.use(express.static(__dirname, {
   },
 }));
 
-// Default route — send the v2 file.
+// Default route — production app (responsive, with disclaimer modal).
 app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Internal playground — the original Tweaks-panel design canvas.
+// Not linked from anywhere public; gated by URL only.
+app.get('/tweaks', (_req, res) => {
   res.sendFile(path.join(__dirname, 'Skylar Chat v2.html'));
 });
 
