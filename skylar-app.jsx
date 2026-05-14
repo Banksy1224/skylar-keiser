@@ -68,7 +68,7 @@ function BrandLogo({ size = 44 }) {
 
 const PROD_DEFAULTS = {
   brand: "Keiser University",
-  tagline: "FLAGSHIP · WEST PALM BEACH, FL",
+  tagline: "",
   primaryColor: "#0b2545",
   accentColor: "#d4a83a",
   neutralColor: "#f7f2e6",
@@ -237,11 +237,13 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {tweaks.brand}
               </span>
-              <span style={{ fontSize: 10.5, letterSpacing: ".2em", textTransform: "uppercase",
-                             color: "rgba(255,255,255,.55)", marginTop: 2,
-                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {tweaks.tagline}
-              </span>
+              {tweaks.tagline ? (
+                <span style={{ fontSize: 10.5, letterSpacing: ".2em", textTransform: "uppercase",
+                               color: "rgba(255,255,255,.55)", marginTop: 2,
+                               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {tweaks.tagline}
+                </span>
+              ) : null}
             </div>
           </div>
 
