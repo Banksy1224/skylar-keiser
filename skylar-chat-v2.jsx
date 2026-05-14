@@ -15,41 +15,112 @@ const PERSONA_PROMPT_V2 = {
   calm:  "You are Skylar, the calm and professional helper mascot of {{brand}}. Concise, neutral, factual where possible.",
 };
 
-// renderRichText: safely render Skylar's text with [label](url) markdown links + line breaks.
+// renderRichText: safely render Skylar's text with a tiny markdown subset.
+//
+// Supports (in order of precedence):
+//   1. [label](https://url) and [label](http://url)  -> <a> opens new tab
+//   2. **bold**                                       -> <strong>
+//   3. *italic*  or _italic_                          -> <em>
+//   4. Newlines                                       -> <br/>
+//
 // Security model:
-//   - HTML is fully escaped before any link parsing (no model-injected markup).
-//   - Only http/https schemes are linkified. Anything else (javascript:, data:, etc.) is rendered as plain text.
-//   - Links open in a new tab with rel=noopener noreferrer.
+//   - All text is rendered through React (no innerHTML, no dangerouslySetInnerHTML).
+//   - Only http/https URLs are linkified. javascript:, data:, mailto:, etc. fall through
+//     as plain text (we intentionally do NOT linkify mailto: — model can't construct
+//     emails to phish students that way).
+//   - Bold/italic tokens that don't have a closing partner render as plain asterisks.
 function renderRichText(raw) {
   if (!raw) return null;
+  // Tokenizer: walk the string, producing typed segments. Links first (highest precedence),
+  // then bold (**), then italic (* or _). Anything else is plain text. Newlines become <br>.
+  function tokenize(line) {
+    const tokens = [];
+    let i = 0;
+    while (i < line.length) {
+      // Try markdown link
+      if (line[i] === '[') {
+        const close = line.indexOf(']', i + 1);
+        if (close > i && line[close + 1] === '(') {
+          const paren = line.indexOf(')', close + 2);
+          if (paren > close) {
+            const url = line.slice(close + 2, paren);
+            if (/^https?:\/\//i.test(url)) {
+              tokens.push({ kind: 'link', label: line.slice(i + 1, close), url });
+              i = paren + 1;
+              continue;
+            }
+          }
+        }
+      }
+      // Try **bold**
+      if (line[i] === '*' && line[i + 1] === '*') {
+        const end = line.indexOf('**', i + 2);
+        if (end > i + 2) {
+          tokens.push({ kind: 'bold', text: line.slice(i + 2, end) });
+          i = end + 2;
+          continue;
+        }
+      }
+      // Try *italic* (single-star, but not part of an unclosed **)
+      if (line[i] === '*' && line[i + 1] !== '*') {
+        const end = line.indexOf('*', i + 1);
+        if (end > i + 1 && line[end - 1] !== ' ' && line[end + 1] !== '*') {
+          tokens.push({ kind: 'italic', text: line.slice(i + 1, end) });
+          i = end + 1;
+          continue;
+        }
+      }
+      // Try _italic_
+      if (line[i] === '_') {
+        const end = line.indexOf('_', i + 1);
+        // Only treat as italic if not surrounded by word chars (avoid breaking snake_case)
+        const prevChar = i > 0 ? line[i - 1] : ' ';
+        const nextChar = end + 1 < line.length ? line[end + 1] : ' ';
+        if (end > i + 1 && !/\w/.test(prevChar) && !/\w/.test(nextChar)) {
+          tokens.push({ kind: 'italic', text: line.slice(i + 1, end) });
+          i = end + 1;
+          continue;
+        }
+      }
+      // Plain text — consume until next markdown-ish character
+      let end = i + 1;
+      while (end < line.length && line[end] !== '[' && line[end] !== '*' && line[end] !== '_') end++;
+      const last = tokens[tokens.length - 1];
+      const chunk = line.slice(i, end);
+      if (last && last.kind === 'text') last.text += chunk;
+      else tokens.push({ kind: 'text', text: chunk });
+      i = end;
+    }
+    return tokens;
+  }
+
   const lines = String(raw).split(/\r?\n/);
-  // Markdown link pattern: [label](url). Greedy on label, restrictive on URL chars.
-  const LINK_RE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
-  return lines.flatMap((line, lineIdx) => {
-    const parts = [];
-    let cursor = 0;
-    let match;
-    LINK_RE.lastIndex = 0;
-    while ((match = LINK_RE.exec(line)) !== null) {
-      const [full, label, url] = match;
-      if (match.index > cursor) parts.push(line.slice(cursor, match.index));
-      parts.push(
-        React.createElement('a', {
-          key: `lnk-${lineIdx}-${match.index}`,
-          href: url,
+  const out = [];
+  lines.forEach((line, lineIdx) => {
+    const toks = tokenize(line);
+    toks.forEach((t, ti) => {
+      const key = `${lineIdx}-${ti}`;
+      if (t.kind === 'link') {
+        out.push(React.createElement('a', {
+          key: 'lnk-' + key,
+          href: t.url,
           target: '_blank',
           rel: 'noopener noreferrer',
           style: { color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' },
-        }, label)
-      );
-      cursor = match.index + full.length;
+        }, t.label));
+      } else if (t.kind === 'bold') {
+        out.push(React.createElement('strong', { key: 'b-' + key }, t.text));
+      } else if (t.kind === 'italic') {
+        out.push(React.createElement('em', { key: 'i-' + key }, t.text));
+      } else {
+        out.push(t.text);
+      }
+    });
+    if (lineIdx < lines.length - 1) {
+      out.push(React.createElement('br', { key: 'br-' + lineIdx }));
     }
-    if (cursor < line.length) parts.push(line.slice(cursor));
-    const out = parts.length ? parts : [line];
-    return lineIdx < lines.length - 1
-      ? [...out, React.createElement('br', { key: `br-${lineIdx}` })]
-      : out;
   });
+  return out;
 }
 
 // Tiny keyword retriever — scores each FAQ by overlap with the question.
