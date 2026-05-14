@@ -25,25 +25,60 @@ function darken(hex, amt) {
 // (logo.png recommended for raster, logo.svg for vector).
 const LOGO_CANDIDATES = ["/logo.svg", "/logo.png"];
 
-function BrandLogo({ size = 44 }) {
-  const [src, setSrc] = React.useState(null);
+// BrandLogo: loads the first available logo file, auto-detects aspect ratio,
+// and renders it appropriately:
+//   - wide-aspect file (wordmark, ratio > 1.4)  -> render at natural aspect, no chip background
+//   - square-ish file (icon/seal)               -> render as a chip with light background
+//   - no file found                              -> dashed-border 'KU' placeholder
+// onShape(kind) lets the parent suppress the duplicate text wordmark when the logo IS the wordmark.
+function BrandLogo({ size = 44, onShape }) {
+  const [state, setState] = React.useState({ src: null, kind: "none", w: 0, h: 0 });
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       for (const candidate of LOGO_CANDIDATES) {
         try {
-          const r = await fetch(candidate, { method: "HEAD" });
-          if (r.ok && !cancelled) { setSrc(candidate); return; }
-        } catch (_e) { /* ignore, try next */ }
+          const head = await fetch(candidate, { method: "HEAD" });
+          if (!head.ok) continue;
+          // Probe natural dimensions so we can decide chip vs wordmark layout.
+          const dims = await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
+            img.onerror = () => resolve({ w: 1, h: 1 });
+            img.src = candidate;
+          });
+          if (cancelled) return;
+          const ratio = dims.w / Math.max(1, dims.h);
+          const kind = ratio > 1.4 ? "wordmark" : "square";
+          setState({ src: candidate, kind, w: dims.w, h: dims.h });
+          if (onShape) onShape(kind);
+          return;
+        } catch (_e) { /* try next */ }
       }
+      if (onShape) onShape("none");
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [onShape]);
 
-  if (src) {
+  if (state.src && state.kind === "wordmark") {
+    // Render at natural aspect ratio; no chip background, no padding.
+    const naturalRatio = state.w / Math.max(1, state.h);
     return (
       <img
-        src={src}
+        src={state.src}
+        alt="Keiser University"
+        style={{
+          height: size, width: "auto", maxWidth: size * naturalRatio,
+          flex: "0 0 auto", objectFit: "contain", display: "block",
+        }}
+      />
+    );
+  }
+
+  if (state.src && state.kind === "square") {
+    return (
+      <img
+        src={state.src}
         alt="Keiser University"
         style={{
           width: size, height: size, flex: "0 0 auto",
@@ -53,7 +88,8 @@ function BrandLogo({ size = 44 }) {
       />
     );
   }
-  // Fallback wordmark placeholder until a real logo file is uploaded.
+
+  // Fallback when no logo file is present yet.
   return (
     <div style={{
       width: size, height: size, flex: "0 0 auto",
@@ -202,6 +238,9 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, typing]);
 
+  // Tracks the loaded logo's shape so we can hide the duplicate text wordmark when the logo IS a wordmark.
+  const [logoShape, setLogoShape] = React.useState("none");
+
   const navy = theme.navy;
   const gold = theme.gold;
   const cream = theme.cream;
@@ -231,20 +270,23 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
           </svg>
 
           <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>
-            <BrandLogo size={44} />
-            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.08, minWidth: 0 }}>
-              <span style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 22, letterSpacing: ".005em",
-                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {tweaks.brand}
-              </span>
-              {tweaks.tagline ? (
-                <span style={{ fontSize: 10.5, letterSpacing: ".2em", textTransform: "uppercase",
-                               color: "rgba(255,255,255,.55)", marginTop: 2,
+            <BrandLogo size={44} onShape={setLogoShape} />
+            {/* Hide the text wordmark when the loaded logo IS a wordmark, to avoid duplication. */}
+            {logoShape !== "wordmark" ? (
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.08, minWidth: 0 }}>
+                <span style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 22, letterSpacing: ".005em",
                                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {tweaks.tagline}
+                  {tweaks.brand}
                 </span>
-              ) : null}
-            </div>
+                {tweaks.tagline ? (
+                  <span style={{ fontSize: 10.5, letterSpacing: ".2em", textTransform: "uppercase",
+                                 color: "rgba(255,255,255,.55)", marginTop: 2,
+                                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {tweaks.tagline}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div style={{ position: "relative", zIndex: 2, marginTop: 36 }}>
