@@ -354,5 +354,59 @@ window.SKYLAR_DEFAULT_FAQS = [
     q: "Is Keiser good for adult learners?",
     a: "Yes — flexible schedules, online learning, and career-focused programs make Keiser popular with working adults and nontraditional students.",
     tags: ["adult", "working", "nontraditional", "flexible", "career-focused"]
+  },
+
+  // ─── Common Action Links (round 3) ─────────────────────────────────
+  // These entries contain official referring URLs supplied by the admissions team.
+  // System prompt rule #10 instructs Skylar to surface these links verbatim when relevant.
+  {
+    q: "How do I order my transcripts?",
+    a: "You can request an official Keiser University transcript here: [Order an Official Transcript](https://www.keiseruniversity.edu/transcripts/). The page has the most current instructions and fees.",
+    tags: ["transcript", "transcripts", "records", "official", "order", "request", "academic record"]
+  },
+  {
+    q: "What is Keiser University's website?",
+    a: "Keiser's main website is [keiseruniversity.edu](https://www.keiseruniversity.edu/) — you can find programs, campuses, admissions info, and contact options there.",
+    tags: ["website", "url", "site", "main", "find", "online", "web address"]
+  },
+  {
+    q: "How do I order my books?",
+    a: "Books are available through the official Keiser University bookstore: [KU Bookstore](http://www.bkstr.com/keiserstore/home). You'll need your course list to pick the right titles.",
+    tags: ["books", "bookstore", "textbooks", "order", "buy", "course materials"]
+  },
+  {
+    q: "How do I get into my student portal?",
+    a: "You can sign in to the Keiser student portal here: [KU Student Portal](http://campusportal.keiseruniversity.edu). If you can't log in, contact the IT Help Desk at 1-855-412-3717 or [helpdesk@keiserschools.net](mailto:helpdesk@keiserschools.net).",
+    tags: ["portal", "student portal", "login", "sign in", "campus portal", "access"]
+  },
+  {
+    q: "Can I see the Keiser University catalog?",
+    a: "Yes — the full catalog is published here: [KU Catalog](http://www.keiseruniversity.edu/catalog/). It covers programs, policies, and academic information.",
+    tags: ["catalog", "course catalog", "programs list", "policies", "handbook"]
+  },
+  {
+    q: "How do I log into class?",
+    a: "Classes are delivered through Blackboard: [KU Class Login](https://keiseruniversity.blackboard.com/). Use your student credentials to sign in. If you have trouble, the Help Desk can assist at 1-855-412-3717.",
+    tags: ["class", "log in", "login", "blackboard", "lms", "course", "online class", "access class"]
+  },
+  {
+    q: "How do I get help with technical issues?",
+    a: "You can reach the Keiser IT Help Desk at 1-855-412-3717 or by email at [helpdesk@keiserschools.net](mailto:helpdesk@keiserschools.net). They handle portal access, email, and class-login issues.",
+    tags: ["help", "helpdesk", "tech support", "technical", "it", "password", "login issue", "can't access"]
+  },
+  {
+    q: "Can I chat live with an admissions counselor?",
+    a: "Yes — you can chat with a live admissions counselor through the university's official chat window. Visit [keiseruniversity.edu](https://www.keiseruniversity.edu/) and look for the chat option, or request information to be contacted directly.",
+    tags: ["live chat", "counselor", "talk", "speak", "agent", "human", "admissions counselor"]
+  },
+
+  // ─── Apply Now — Campus & Modality Routing ─────────────────────────
+  // Skylar should ask for modality + language + campus first, then surface the matching link.
+  // All links live in a single answer body so retrieval surfaces the full table; the LLM
+  // selects the right line per the student's stated preference, citing the link verbatim.
+  {
+    q: "I'd like to apply now. How do I start?",
+    a: "Before I share a link, can you tell me three things? (1) In person or online, (2) English or Spanish, and (3) undergraduate or graduate? Once I know, I'll point you to the right Request Information page.\n\nOnline options:\n• Online — English: [Online English RFI](https://enroll.enrolledu.net/rfi-profile-online?SourceSubCat=af14d3ea-f843-ed11-bba1-000d3a314f47&Source=App%20Profile)\n• Online — Spanish: [Online Spanish RFI](https://enroll.enrolledu.net/rfi-profile-online?SourceSubCat=d7454b43-62da-ef11-a730-000d3a14c365&Source=App%20Profile)\n• Online — Graduate: [Graduate Online RFI](https://enroll.enrolledu.net/rfi-profile-grad)\n\nCampus options:\n• Flagship (West Palm Beach area): [Flagship RFI](https://enroll.enrolledu.net/rfi-profile-flagship)\n• Clearwater: [Clearwater RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Clearwater)\n• Daytona Beach: [Daytona RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Daytona)\n• Fort Lauderdale: [Fort Lauderdale RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Fort%20Lauderdale)\n• Fort Myers: [Fort Myers RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Fort%20Myers)\n• Jacksonville: [Jacksonville RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Jacksonville)\n• Lakeland: [Lakeland RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Lakeland)\n• Melbourne: [Melbourne RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Melbourne)\n• Miami: [Miami RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Miami)\n• Naples: [Naples RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Naples)\n• New Port Richey: [New Port Richey RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=New%20Port%20Richey)\n• Orlando: [Orlando RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Orlando)\n• Pembroke Pines: [Pembroke Pines RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Pembroke%20Pines)\n• Port St. Lucie: [Port St. Lucie RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Port%20St.%20Lucie)\n• Sarasota: [Sarasota RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Sarasota)\n• Tallahassee: [Tallahassee RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Tallahassee)\n• Tampa: [Tampa RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=Tampa)\n• West Palm Beach: [West Palm Beach RFI](https://enroll.enrolledu.net/rfi-profile-GroundCampus?Campus=West%20Palm%20Beach)\n• Nicaragua (Managua or San Marcos): [Request Information](https://www.keiseruniversity.edu/request-information/)",
+    tags: ["apply", "application", "start", "enroll", "rfi", "request information", "sign up", "campus", "modality", "online", "in person", "spanish", "english", "graduate", "undergraduate"]
   }
 ];
