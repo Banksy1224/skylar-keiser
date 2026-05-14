@@ -102,7 +102,7 @@ function MascotMono({ size = 64, navy = '#0b2545', gold = '#d4a83a', cream = '#f
 // Style D — Video: real Skylar clip looped silently in a circular avatar.
 // Falls back to MascotGeo if the video errors (e.g. file missing).
 const SKYLAR_VIDEO_SRC = "uploads/World Cup Skylar Video.mp4";
-function MascotVideo({ size = 64, navy = '#0b2545', gold = '#d4a83a', cream = '#f7f2e6', objectPosition = '50% 30%' }) {
+function MascotVideo({ size = 64, navy = '#0b2545', gold = '#d4a83a', cream = '#f7f2e6', objectPosition = '50% 55%' }) {
   const [errored, setErrored] = React.useState(false);
   if (errored) return <MascotGeo size={size} navy={navy} gold={gold} cream={cream} />;
   return (

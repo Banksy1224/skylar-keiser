@@ -20,6 +20,52 @@ function darken(hex, amt) {
   return _skylar_rgbToHex(r * (1 - amt), g * (1 - amt), b * (1 - amt));
 }
 
+// Tries each of these URLs in order; first one that loads wins.
+// Drop your approved logo into the repo root as one of these filenames
+// (logo.png recommended for raster, logo.svg for vector).
+const LOGO_CANDIDATES = ["/logo.svg", "/logo.png"];
+
+function BrandLogo({ size = 44 }) {
+  const [src, setSrc] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const candidate of LOGO_CANDIDATES) {
+        try {
+          const r = await fetch(candidate, { method: "HEAD" });
+          if (r.ok && !cancelled) { setSrc(candidate); return; }
+        } catch (_e) { /* ignore, try next */ }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt="Keiser University"
+        style={{
+          width: size, height: size, flex: "0 0 auto",
+          borderRadius: 8, objectFit: "contain",
+          background: "rgba(255,255,255,.96)", padding: 4,
+        }}
+      />
+    );
+  }
+  // Fallback wordmark placeholder until a real logo file is uploaded.
+  return (
+    <div style={{
+      width: size, height: size, flex: "0 0 auto",
+      borderRadius: 8, background: "rgba(255,255,255,.08)",
+      border: "1px dashed rgba(255,255,255,.3)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: Math.max(9, Math.floor(size / 5)),
+      color: "rgba(255,255,255,.7)", letterSpacing: ".12em", fontWeight: 600,
+    }}>KU</div>
+  );
+}
+
 const PROD_DEFAULTS = {
   brand: "Keiser University",
   tagline: "FLAGSHIP · WEST PALM BEACH, FL",
@@ -35,7 +81,8 @@ const PROD_DEFAULTS = {
   ],
 };
 
-const DISCLAIMER_VERSION = "v1-2026-05-13";
+// Bumping this string invalidates prior acceptances and re-prompts the modal.
+const DISCLAIMER_VERSION = "v2-legal-2026-05-13";
 const DISCLAIMER_STORAGE_KEY = `skylar.disclaimer.${DISCLAIMER_VERSION}`;
 
 function useMediaQuery(query) {
@@ -68,19 +115,19 @@ function DisclaimerModal({ onAccept, brand, accentColor, primaryColor }) {
       aria-labelledby="skylar-disclaimer-title"
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
-        background: "rgba(8, 14, 28, 0.78)",
+        background: "rgba(8, 14, 28, 0.85)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "20px",
+        padding: "20px", overflowY: "auto",
       }}
     >
       <div style={{
-        background: "#fff", maxWidth: 520, width: "100%",
-        borderRadius: 18, padding: "28px 26px 24px",
+        background: "#fff", maxWidth: 560, width: "100%",
+        borderRadius: 18, padding: "28px 26px 22px",
         boxShadow: "0 30px 80px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.06)",
         fontFamily: '"Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-        color: "#1d2433",
+        color: "#1d2433", maxHeight: "calc(100vh - 40px)", overflowY: "auto",
       }}>
         <div style={{
           display: "inline-block", padding: "4px 10px", borderRadius: 999,
@@ -88,35 +135,41 @@ function DisclaimerModal({ onAccept, brand, accentColor, primaryColor }) {
           fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase",
           marginBottom: 14,
         }}>
-          Before you chat with Skylar
+          Important notice — please read
         </div>
         <h2 id="skylar-disclaimer-title" style={{
           fontFamily: '"Instrument Serif", Georgia, serif', fontWeight: 400,
-          fontSize: 28, lineHeight: 1.1, margin: "0 0 12px", color: primaryColor,
+          fontSize: 26, lineHeight: 1.15, margin: "0 0 10px", color: primaryColor,
         }}>
-          You're chatting with an AI assistant.
+          Skylar is an AI assistant. Its responses are not official statements of {brand}.
         </h2>
-        <ul style={{
-          margin: "0 0 18px", padding: 0, listStyle: "none",
-          fontSize: 14.5, lineHeight: 1.55, color: "#33384a",
+        <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "#33384a", margin: "0 0 14px" }}>
+          By continuing, you acknowledge and agree to the following terms:
+        </p>
+        <ol style={{
+          margin: "0 0 16px", padding: "0 0 0 18px",
+          fontSize: 13.5, lineHeight: 1.55, color: "#33384a",
         }}>
-          <li style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: "1px solid #eee" }}>
-            <span aria-hidden="true" style={{ color: accentColor, fontWeight: 700, flex: "0 0 16px" }}>•</span>
-            <span>Skylar is an AI prototype, not a real {brand} staff member. Replies may be incomplete or wrong.</span>
+          <li style={{ padding: "6px 0" }}>
+            <strong>Not official.</strong> Skylar is an automated AI assistant. Its responses do <em>not</em> constitute official statements, representations, advice, commitments, or guarantees by {brand}, its officers, employees, or affiliates.
           </li>
-          <li style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: "1px solid #eee" }}>
-            <span aria-hidden="true" style={{ color: accentColor, fontWeight: 700, flex: "0 0 16px" }}>•</span>
-            <span>For binding answers on admissions, tuition, financial aid, or transcripts, confirm with {brand}'s admissions team.</span>
+          <li style={{ padding: "6px 0" }}>
+            <strong>No reliance.</strong> Skylar may produce inaccurate, incomplete, or outdated information. You should not rely on Skylar for any decision involving admissions, enrollment, tuition, financial aid, transfer credits, accreditation, employment outcomes, immigration, or legal, financial, or medical matters. Independently verify all material information directly with {brand}'s admissions office before acting.
           </li>
-          <li style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: "1px solid #eee" }}>
-            <span aria-hidden="true" style={{ color: accentColor, fontWeight: 700, flex: "0 0 16px" }}>•</span>
-            <span>Do not share Social Security numbers, passwords, banking details, or other sensitive personal information.</span>
+          <li style={{ padding: "6px 0" }}>
+            <strong>No contract; no enrollment offer.</strong> Nothing Skylar says creates an offer, acceptance, contract, scholarship, financial aid award, or any other enforceable commitment between you and {brand}.
           </li>
-          <li style={{ display: "flex", gap: 10, padding: "8px 0" }}>
-            <span aria-hidden="true" style={{ color: accentColor, fontWeight: 700, flex: "0 0 16px" }}>•</span>
-            <span>Conversations may be reviewed to improve the assistant. Don't enter information you wouldn't want a staff reviewer to see.</span>
+          <li style={{ padding: "6px 0" }}>
+            <strong>Privacy.</strong> Do not share Social Security numbers, government IDs, passwords, financial account details, health information, or other sensitive personal data. Conversations may be logged, reviewed, and used to improve the assistant.
           </li>
-        </ul>
+          <li style={{ padding: "6px 0" }}>
+            <strong>As-is; limitation of liability.</strong> Skylar is provided “as is,” without warranties of any kind. To the fullest extent permitted by law, {brand} and the operators of this tool disclaim all liability for any loss or damage arising from your use of, or reliance on, Skylar's responses.
+          </li>
+        </ol>
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: "rgba(0,0,0,.55)", margin: "0 0 16px",
+                    padding: "10px 12px", background: "#f7f5ef", borderRadius: 8 }}>
+          For binding answers, contact {brand} Admissions. If you are in crisis, please contact emergency services (911 in the U.S.) or a crisis hotline — Skylar is not a crisis-response tool.
+        </p>
         <button
           type="button"
           onClick={onAccept}
@@ -126,10 +179,10 @@ function DisclaimerModal({ onAccept, brand, accentColor, primaryColor }) {
             fontFamily: "inherit", fontSize: 15, fontWeight: 600, letterSpacing: ".02em",
           }}
         >
-          I understand — start chatting
+          I have read and accept these terms
         </button>
-        <div style={{ fontSize: 11, color: "rgba(0,0,0,.45)", textAlign: "center", marginTop: 12 }}>
-          By continuing, you acknowledge this notice.
+        <div style={{ fontSize: 11, color: "rgba(0,0,0,.45)", textAlign: "center", marginTop: 10 }}>
+          Clicking above records your acceptance for this device.
         </div>
       </div>
     </div>
@@ -178,13 +231,7 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
           </svg>
 
           <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{
-              width: 44, height: 44, flex: "0 0 auto",
-              borderRadius: 8, background: "rgba(255,255,255,.08)",
-              border: "1px dashed rgba(255,255,255,.3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 10, color: "rgba(255,255,255,.5)", letterSpacing: ".08em",
-            }}>LOGO</div>
+            <BrandLogo size={44} />
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.08, minWidth: 0 }}>
               <span style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 22, letterSpacing: ".005em",
                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -224,7 +271,8 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
             }}>
               <video src={typeof SKYLAR_VIDEO_SRC !== "undefined" ? SKYLAR_VIDEO_SRC : "/uploads/World Cup Skylar Video.mp4"}
                      autoPlay loop muted playsInline
-                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                     style={{ width: "100%", height: "100%", objectFit: "cover",
+                              objectPosition: "50% 35%", display: "block" }} />
               <div style={{ position: "absolute", inset: 0,
                             background: "linear-gradient(180deg, transparent 55%, rgba(0,0,0,.45) 100%)" }} />
               <div style={{
@@ -320,7 +368,7 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
           <Composer onSend={send} theme={theme} placeholder="Ask Skylar anything…" />
           <div style={{ fontSize: 10.5, color: "rgba(0,0,0,.5)", marginTop: 8,
                         textAlign: "center", letterSpacing: ".04em" }}>
-            Skylar is an AI assistant — responses may be inaccurate. Confirm with admissions for binding answers.
+            AI assistant — not an official {tweaks.brand} statement. Verify any decision with admissions.
           </div>
         </div>
       </div>

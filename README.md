@@ -94,10 +94,38 @@ The Tweaks panel (toggle from the toolbar) lets you change:
 
 ### Logo
 
-The logo slot at the top of the left panel uses an `<image-slot>` web component that's read-only outside the in-platform editor. To set a logo for production:
+The production app auto-loads a logo if one exists at `/logo.svg` or `/logo.png` in the project root. If neither is present, a `KU` placeholder badge appears.
 
-1. Place your logo file (e.g. `logo.png`) in the project root.
-2. In `variations-v2.jsx`, replace the `<image-slot>` element with a regular `<img src="/logo.png" alt="Keiser University" />` styled to the same size.
+**To install your approved logo:**
+
+1. Save the approved file as `logo.svg` (preferred for vector) or `logo.png` (300×300px+ recommended, transparent background) in the project root.
+2. Commit and push. Railway auto-deploys.
+3. The hero brand area will pick it up automatically.
+
+> Use of any institutional mark (seal, athletic mark, wordmark) requires explicit written approval from the institution's Marketing/Communications/General Counsel. Do not install a mark you don't have rights to use on this product.
+
+## Adding website content to Skylar's knowledge
+
+Skylar answers only from `faqs.js`. To extend her knowledge with content from keiseruniversity.edu, use the reviewable crawler:
+
+```bash
+node scripts/crawl-keiser.mjs \
+  --start https://www.keiseruniversity.edu/admissions/ \
+  --start https://www.keiseruniversity.edu/financial-aid/ \
+  --max 30 \
+  --out faqs-from-website-candidates.json
+```
+
+This writes a JSON file of candidate Q/A pairs. **You must review every entry before any of it reaches a student:**
+
+1. Open the output JSON. Each entry has a `status: "needs_review"` field.
+2. Delete anything misleading, marketing-puff, outdated, or off-topic.
+3. Edit answers to be conservative — "typically," "as of [date]," "contact admissions to confirm." Never make commitments.
+4. Add `tags` to each entry (the keyword retriever uses them).
+5. Change `status` to `"approved"` for entries you want to keep.
+6. Manually copy approved entries into `faqs.js` and commit.
+
+**The crawler does NOT** automatically merge content into `faqs.js` — by design. Misrepresentation is a regulatory and reputational risk; a human must own every fact Skylar repeats. The crawler is polite (single-threaded, robots.txt-respecting, real User-Agent), but never run it against a domain you don't own or aren't authorized to crawl.
 
 ## Caveats
 
