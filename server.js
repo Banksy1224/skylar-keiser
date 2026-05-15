@@ -6,11 +6,43 @@ import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { logEvent, analyticsHealth } from './analytics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
+
+// ─── API: /api/event ────────────────────────────────────────────────────
+// Browser-side analytics endpoint. Fire-and-forget; never blocks the chat.
+// We intentionally do NOT trust the client's user_agent header — we use the
+// req.headers['user-agent'] server-side and ignore whatever the body says.
+app.post('/api/event', (req, res) => {
+  try {
+    const body = req.body || {};
+    logEvent({
+      session_id: body.session_id,
+      event_type: body.event_type,
+      question: body.question,
+      faq_indices: body.faq_indices,
+      top_score: body.top_score,
+      faq_index: body.faq_index,
+      lang: body.lang,
+      persona: body.persona,
+      meta: body.meta,
+      user_agent: req.headers['user-agent'],
+    });
+    res.status(204).end();
+  } catch (e) {
+    // Analytics must never break the app.
+    console.error('[/api/event] failed:', e.message);
+    res.status(204).end();
+  }
+});
+
+app.get('/api/analytics/health', (_req, res) => {
+  res.json(analyticsHealth());
+});
 
 // Initialise the Anthropic client. Reads ANTHROPIC_API_KEY from env.
 const client = new Anthropic();

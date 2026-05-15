@@ -225,13 +225,21 @@ function DisclaimerModal({ onAccept, brand, accentColor, primaryColor }) {
   );
 }
 
-function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
+function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang }) {
   const initialChips = React.useMemo(() => tweaks.chips, [tweaks.chips.join("|")]);
+  // Pick the language-appropriate FAQ corpus when available.
+  const faqsForLang = React.useMemo(() => {
+    if (lang === 'es' && Array.isArray(window.SKYLAR_DEFAULT_FAQS_ES) && window.SKYLAR_DEFAULT_FAQS_ES.length) {
+      return window.SKYLAR_DEFAULT_FAQS_ES;
+    }
+    return tweaks.faqs;
+  }, [lang, tweaks.faqs]);
   const { messages, typing, chips, send, react } = useSkylarThreadV2({
     persona: tweaks.persona,
     initialChips,
     brand: tweaks.brand,
-    faqs: tweaks.faqs,
+    faqs: faqsForLang,
+    lang,
   });
   const scrollRef = React.useRef(null);
   React.useEffect(() => {
@@ -366,17 +374,26 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
               </div>
             </div>
           </div>
-          {!isMobile && (
-            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              {["Programs", "Apply", "Visit"].map((t) => (
-                <button key={t} style={{
-                  background: "#fff", border: `1px solid ${theme.border}`, color: navy,
-                  borderRadius: 999, padding: "6px 12px", fontSize: 12,
-                  fontFamily: "inherit", cursor: "pointer",
-                }}>{t}</button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+            <button
+              onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+              aria-label={lang === 'es' ? 'Switch to English' : 'Cambiar a español'}
+              title={lang === 'es' ? 'Switch to English' : 'Cambiar a español'}
+              style={{
+                background: "#fff", border: `1px solid ${theme.border}`, color: navy,
+                borderRadius: 999, padding: "6px 12px", fontSize: 12,
+                fontFamily: "inherit", cursor: "pointer", fontWeight: 600,
+              }}>
+              {lang === 'es' ? 'EN' : 'ES'}
+            </button>
+            {!isMobile && ["Programs", "Apply", "Visit"].map((t) => (
+              <button key={t} style={{
+                background: "#fff", border: `1px solid ${theme.border}`, color: navy,
+                borderRadius: 999, padding: "6px 12px", fontSize: 12,
+                fontFamily: "inherit", cursor: "pointer",
+              }}>{t}</button>
+            ))}
+          </div>
         </div>
 
         <div ref={scrollRef} style={{
@@ -391,6 +408,7 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed }) {
             return (
               <BubbleV2 key={m.id} msg={m} theme={theme} onReact={react}
                 showAvatar={showAvatar}
+                lang={lang}
                 AvatarSlot={<Mascot style="video" size={28} navy={navy} gold={gold} cream={cream} />} />
             );
           })}
@@ -424,6 +442,24 @@ function SkylarApp() {
   const isMobile = useMediaQuery("(max-width: 820px)");
   const isEmbed = useQueryFlag("embed");
 
+  // Language state — initialised from ?lang= / navigator.language, mutable via toggle.
+  const [lang, setLangRaw] = React.useState(() => (typeof detectLang === 'function' ? detectLang() : 'en'));
+  const setLang = React.useCallback((next) => {
+    setLangRaw((prev) => {
+      if (prev === next) return prev;
+      try {
+        if (typeof postEvent === 'function') {
+          postEvent({ event_type: 'lang_switch', lang: next, meta: { from: prev } });
+        }
+        // Mirror to ?lang= so refreshing or sharing preserves choice.
+        const url = new URL(window.location.href);
+        url.searchParams.set('lang', next);
+        window.history.replaceState({}, '', url.toString());
+      } catch (_e) {}
+      return next;
+    });
+  }, []);
+
   // Disclaimer state — skip in embed mode (the embedding page is responsible for it).
   const [accepted, setAccepted] = React.useState(() => {
     if (typeof window === "undefined") return true;
@@ -452,7 +488,7 @@ function SkylarApp() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: tweaks.neutralColor }}>
-      <ProdChat tweaks={tweaks} theme={theme} isMobile={isMobile} isEmbed={isEmbed} />
+      <ProdChat tweaks={tweaks} theme={theme} isMobile={isMobile} isEmbed={isEmbed} lang={lang} setLang={setLang} />
       {!accepted && (
         <DisclaimerModal
           onAccept={accept}
