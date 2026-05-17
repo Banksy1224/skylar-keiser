@@ -225,7 +225,7 @@ function DisclaimerModal({ onAccept, brand, accentColor, primaryColor }) {
   );
 }
 
-function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang }) {
+function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang, handoffEnabled = false, onRequestHandoff }) {
   const initialChips = React.useMemo(() => tweaks.chips, [tweaks.chips.join("|")]);
   // Pick the language-appropriate FAQ corpus when available.
   const faqsForLang = React.useMemo(() => {
@@ -405,10 +405,16 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang }) {
           {messages.map((m, i) => {
             const prev = messages[i - 1];
             const showAvatar = m.role === "skylar" && (!prev || prev.role !== "skylar");
+            // The user message immediately before this Skylar bubble — used as
+            // context_question when the student requests a counselor handoff.
+            const precedingUserQuestion = (m.role === 'skylar' && prev && prev.role === 'user') ? prev.text : '';
             return (
               <BubbleV2 key={m.id} msg={m} theme={theme} onReact={react}
                 showAvatar={showAvatar}
                 lang={lang}
+                handoffEnabled={handoffEnabled}
+                onRequestHandoff={onRequestHandoff}
+                precedingUserQuestion={precedingUserQuestion}
                 AvatarSlot={<Mascot style="video" size={28} navy={navy} gold={gold} cream={cream} />} />
             );
           })}
@@ -441,6 +447,15 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang }) {
 function SkylarApp() {
   const isMobile = useMediaQuery("(max-width: 820px)");
   const isEmbed = useQueryFlag("embed");
+
+  // Handoff (YakChat SMS) status — polled once on load. The button only
+  // renders when the server reports feature_flag_on=true. Until legal review
+  // is complete and YAKCHAT_HANDOFF_ENABLED=true is set on Railway, this stays
+  // null/false and the feature is invisible to users.
+  const handoffStatus = useHandoffStatus();
+  const [consentOpen, setConsentOpen] = React.useState(false);
+  const [consentContext, setConsentContext] = React.useState('');
+  const [consentResult, setConsentResult] = React.useState(null);
 
   // Language state — initialised from ?lang= / navigator.language, mutable via toggle.
   const [lang, setLangRaw] = React.useState(() => (typeof detectLang === 'function' ? detectLang() : 'en'));
@@ -488,7 +503,39 @@ function SkylarApp() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: tweaks.neutralColor }}>
-      <ProdChat tweaks={tweaks} theme={theme} isMobile={isMobile} isEmbed={isEmbed} lang={lang} setLang={setLang} />
+      <ProdChat
+        tweaks={tweaks}
+        theme={theme}
+        isMobile={isMobile}
+        isEmbed={isEmbed}
+        lang={lang}
+        setLang={setLang}
+        handoffEnabled={Boolean(handoffStatus && handoffStatus.feature_flag_on)}
+        onRequestHandoff={(question) => { setConsentContext(question || ''); setConsentResult(null); setConsentOpen(true); }}
+      />
+      {consentOpen && (
+        <ConsentModal
+          open={consentOpen}
+          onClose={() => setConsentOpen(false)}
+          onSubmitted={(r) => { setConsentResult(r); setConsentOpen(false); }}
+          lang={lang}
+          brand={tweaks.brand}
+          contextQuestion={consentContext}
+          theme={theme}
+          sessionId={typeof SKYLAR_SESSION_ID !== 'undefined' ? SKYLAR_SESSION_ID : 'unknown'}
+        />
+      )}
+      {consentResult && (
+        <div style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 10000,
+          background: '#fff', border: `1px solid ${theme.border}`,
+          padding: '10px 14px', borderRadius: 12, maxWidth: 320,
+          boxShadow: '0 8px 24px rgba(11,37,69,.18)',
+          fontSize: 14, color: theme.navy, lineHeight: 1.4,
+        }} onClick={() => setConsentResult(null)}>
+          {consentResult.message}
+        </div>
+      )}
       {!accepted && (
         <DisclaimerModal
           onAccept={accept}

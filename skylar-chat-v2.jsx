@@ -360,10 +360,11 @@ Respond now, following every rule above. If you are uncertain, default to referr
 
 // Bubble v2 — adds "Sources" footer when message has source FAQs, plus the
 // low-confidence handoff CTA when retrieval was below threshold.
-function BubbleV2({ msg, theme, onReact, showAvatar = false, AvatarSlot = null, dense = false, lang = 'en' }) {
+function BubbleV2({ msg, theme, onReact, showAvatar = false, AvatarSlot = null, dense = false, lang = 'en', handoffEnabled = false, onRequestHandoff = null, precedingUserQuestion = '' }) {
   const isUser = msg.role === 'user';
   const [hover, setHover] = React.useState(false);
   const strings = UI_STRINGS[lang] || UI_STRINGS.en;
+  const smsLabel = lang === 'es' ? 'Enviar texto a un consejero' : 'Text an admissions counselor';
   const wrap = {
     display: 'flex', gap: 8, alignItems: 'flex-end',
     justifyContent: isUser ? 'flex-end' : 'flex-start',
@@ -386,28 +387,54 @@ function BubbleV2({ msg, theme, onReact, showAvatar = false, AvatarSlot = null, 
       <div style={{ position: 'relative', maxWidth: '82%' }}>
         <div style={bubble}>{renderRichText(msg.text)}</div>
 
-        {/* Handoff CTA — low confidence retrieval suggests a real human */}
+        {/* Handoff CTAs — low confidence retrieval suggests a real human.
+            We always show the safe default (link to RFI/live-chat page).
+            When the SMS-handoff feature flag is on, we add a second pill
+            that opens the consent modal for direct text-from-counselor. */}
         {!isUser && msg.handoff && (
-          <a href={msg.handoff.url}
-             target="_blank"
-             rel="noopener noreferrer"
-             onClick={() => postEvent({
-               event_type: 'handoff',
-               lang,
-               meta: { url: msg.handoff.url, msg_id: msg.id },
-             })}
-             style={{
-               display: 'inline-flex', alignItems: 'center', gap: 6,
-               marginTop: 8, padding: '7px 12px', borderRadius: 999,
-               background: theme.gold || '#f0b75a', color: theme.navy || '#0b2545',
-               fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-               border: `1px solid ${theme.border}`,
-               boxShadow: '0 1px 2px rgba(11,37,69,.08)',
-               cursor: 'pointer',
-             }}>
-            <span aria-hidden="true">→</span>
-            {msg.handoff.label}
-          </a>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            <a href={msg.handoff.url}
+               target="_blank"
+               rel="noopener noreferrer"
+               onClick={() => postEvent({
+                 event_type: 'handoff',
+                 lang,
+                 meta: { url: msg.handoff.url, msg_id: msg.id, channel: 'web' },
+               })}
+               style={{
+                 display: 'inline-flex', alignItems: 'center', gap: 6,
+                 padding: '7px 12px', borderRadius: 999,
+                 background: theme.gold || '#f0b75a', color: theme.navy || '#0b2545',
+                 fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+                 border: `1px solid ${theme.border}`,
+                 boxShadow: '0 1px 2px rgba(11,37,69,.08)',
+                 cursor: 'pointer',
+               }}>
+              <span aria-hidden="true">→</span>
+              {msg.handoff.label}
+            </a>
+            {handoffEnabled && typeof onRequestHandoff === 'function' && (
+              <button onClick={() => {
+                postEvent({
+                  event_type: 'handoff',
+                  lang,
+                  meta: { msg_id: msg.id, channel: 'sms_modal_opened' },
+                });
+                onRequestHandoff(precedingUserQuestion);
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 12px', borderRadius: 999,
+                background: '#fff', color: theme.navy || '#0b2545',
+                fontSize: 12.5, fontWeight: 600,
+                border: `1px solid ${theme.border}`,
+                fontFamily: 'inherit', cursor: 'pointer',
+              }}>
+                <span aria-hidden="true">✏︎</span>
+                {smsLabel}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Sources */}
