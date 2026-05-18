@@ -299,18 +299,23 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang, handoffEnab
 
           <div style={{ position: "relative", zIndex: 2, marginTop: 36 }}>
             <span style={{ fontSize: 11, letterSpacing: ".22em", textTransform: "uppercase",
-                           color: gold, fontWeight: 600 }}>Future students</span>
+                           color: gold, fontWeight: 600 }}>{lang === 'es' ? 'Futuros estudiantes' : 'Future students'}</span>
             <h1 style={{
               fontFamily: '"Instrument Serif", Georgia, serif', fontWeight: 400,
               fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1.02, letterSpacing: "-.015em",
               margin: "12px 0 12px",
             }}>
-              Meet <em style={{ color: gold, fontStyle: "italic" }}>Skylar</em>.
+              {lang === 'es' ? (
+                <>Conoce a <em style={{ color: gold, fontStyle: "italic" }}>Skylar</em>.</>
+              ) : (
+                <>Meet <em style={{ color: gold, fontStyle: "italic" }}>Skylar</em>.</>
+              )}
             </h1>
             <p style={{ fontSize: 15.5, lineHeight: 1.55, color: "rgba(255,255,255,.78)",
                         maxWidth: 440, margin: 0 }}>
-              Your guide to life at {tweaks.brand}. Ask about programs, applying, what dorm life is really like,
-              or what folks do on a Tuesday night.
+              {lang === 'es'
+                ? `Tu guía para la vida en ${tweaks.brand}. Pregúntame sobre programas, admisiones, cómo es vivir en los dormitorios o qué se hace un martes por la noche.`
+                : `Your guide to life at ${tweaks.brand}. Ask about programs, applying, what dorm life is really like, or what folks do on a Tuesday night.`}
             </p>
           </div>
 
@@ -386,13 +391,32 @@ function ProdChat({ tweaks, theme, isMobile, isEmbed, lang, setLang, handoffEnab
               }}>
               {lang === 'es' ? 'EN' : 'ES'}
             </button>
-            {!isMobile && ["Programs", "Apply", "Visit"].map((t) => (
-              <button key={t} style={{
-                background: "#fff", border: `1px solid ${theme.border}`, color: navy,
-                borderRadius: 999, padding: "6px 12px", fontSize: 12,
-                fontFamily: "inherit", cursor: "pointer",
-              }}>{t}</button>
-            ))}
+            {!isMobile && (() => {
+              // Round 5.2: wire the top-bar pills so they actually inject a
+              // starter question into the chat. EN + ES labels and prompts.
+              const tabs = lang === 'es'
+                ? [
+                    { label: 'Programas', prompt: '¿Qué programas ofrecen?' },
+                    { label: 'Aplicar', prompt: '¿Cómo aplico a Keiser University?' },
+                    { label: 'Visitar', prompt: '¿Cómo puedo visitar el campus?' },
+                  ]
+                : [
+                    { label: 'Programs', prompt: 'What programs do you offer?' },
+                    { label: 'Apply', prompt: 'How do I apply to Keiser University?' },
+                    { label: 'Visit', prompt: 'How can I visit the campus?' },
+                  ];
+              return tabs.map((t) => (
+                <button
+                  key={t.label}
+                  onClick={() => send(t.prompt)}
+                  style={{
+                    background: "#fff", border: `1px solid ${theme.border}`, color: navy,
+                    borderRadius: 999, padding: "6px 12px", fontSize: 12,
+                    fontFamily: "inherit", cursor: "pointer",
+                  }}
+                >{t.label}</button>
+              ));
+            })()}
           </div>
         </div>
 

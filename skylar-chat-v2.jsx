@@ -340,7 +340,7 @@ Respond now, following every rule above. If you are uncertain, default to referr
       role: 'skylar',
       text: reply.trim(),
       reactions: [],
-      sources: hits.map((h) => ({ idx: h.idx, q: h.faq.q })),
+      sources: hits.map((h) => ({ idx: h.idx, q: h.faq.q, url: h.faq.url })),
       // Attach handoff CTA only when retrieval confidence is below threshold.
       handoff: lowConfidence ? { url: LIVE_CHAT_URL, label: strings.handoffLabel } : null,
     }]);
@@ -446,22 +446,37 @@ function BubbleV2({ msg, theme, onReact, showAvatar = false, AvatarSlot = null, 
               fontSize: 10.5, color: 'rgba(11,37,69,.5)', letterSpacing: '.06em',
               textTransform: 'uppercase', marginRight: 2, fontWeight: 500,
             }}>{strings.sourcedFrom}</span>
-            {msg.sources.map((s, i) => (
-              <span key={i}
-                    title={s.q}
-                    onClick={() => postEvent({
-                      event_type: 'source_click',
-                      faq_index: s.idx,
-                      lang,
-                      meta: { msg_id: msg.id, q: s.q },
-                    })}
-                    style={{
+            {msg.sources.map((s, i) => {
+              // Round 5.2: when the FAQ has a URL, render as a real anchor
+              // that opens in a new tab. When it doesn't (current state for
+              // most of the corpus until URLs are backfilled), render as a
+              // non-interactive badge so we don't pretend it's clickable.
+              const sharedStyle = {
                 fontSize: 11, padding: '2px 8px', borderRadius: 999,
                 background: theme.surface, border: `1px solid ${theme.border}`,
                 color: theme.navy, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap', cursor: 'pointer',
-              }}>{s.q}</span>
-            ))}
+                whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-block',
+              };
+              if (s.url) {
+                return (
+                  <a key={i}
+                     href={s.url}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     title={s.q}
+                     onClick={() => postEvent({
+                       event_type: 'source_click',
+                       faq_index: s.idx,
+                       lang,
+                       meta: { msg_id: msg.id, q: s.q, url: s.url },
+                     })}
+                     style={{ ...sharedStyle, cursor: 'pointer' }}>{s.q}</a>
+                );
+              }
+              return (
+                <span key={i} title={s.q} style={{ ...sharedStyle, cursor: 'default' }}>{s.q}</span>
+              );
+            })}
           </div>
         )}
 
