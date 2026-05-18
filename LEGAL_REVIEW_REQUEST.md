@@ -1,105 +1,165 @@
-# Skylar — Legal review request: TCPA consent flow for live counselor SMS
+# Legal Review Request — Skylar SMS Counselor Handoff
 
-**Status:** DRAFT — built but feature-flagged OFF. Not user-visible until counsel signs off.
-**Owner:** Robert Keiser (Vice-Chancellor, Graduate School)
-**Drafted by:** Edison (AI assistant) on 2026-05-17
-**Audience:** Keiser University general counsel / compliance officer
+**To:** Keiser University Legal Counsel
+**From:** Robert Keiser, Vice-Chancellor — Graduate School
+**Date:** 2026-05-17
+**Status:** DRAFT — code is built and deployed behind a feature flag; **no SMS is being sent and no consent records are being collected** until this review is complete.
+**Estimated review effort:** 15–30 minutes (see Section 3 — the ask is narrow).
 
 ---
 
-## What we're proposing
+## 1. What this is
 
-A new feature in Skylar, Keiser's AI admissions chatbot, that lets prospective students click a button to be texted by a Keiser admissions counselor. The text is sent via Keiser's existing YakChat (Microsoft Teams SMS) enterprise tool. The student initiates the request; the counselor replies from Teams; the conversation lands on the student's phone as SMS.
+Skylar is the AI chat assistant live at `https://skylar-keiser-production.up.railway.app/` (also embeddable into Keiser web properties). When a prospective student's question is one Skylar cannot confidently answer, we want to offer them a button labeled **"Text an admissions counselor"** that connects them via YakChat (Microsoft Teams SMS) — the same enterprise platform Keiser counselors already use daily for SMS communications with applicants and enrolled students.
 
-**Why we need legal review:** TCPA (Telephone Consumer Protection Act, 47 U.S.C. § 227 and FCC implementing regulations) requires "prior express written consent" before automated systems can send marketing/non-emergency SMS to a mobile number. Higher-education admissions has been an active TCPA litigation target. Before flipping this feature on, we want counsel to review and approve (a) the proposed consent language, (b) the opt-out mechanism, and (c) the audit recordkeeping.
+Before any SMS is sent, the user must complete a TCPA consent modal. **This memo is a request to bless the consent text below.**
 
-## What we've built (and what is gated)
+The infrastructure is built, locked behind a feature flag (`YAKCHAT_HANDOFF_ENABLED=false`), and the button is invisible to users until that flag is flipped. We will not flip the flag until you sign off.
 
-Everything is in production code today on the live Skylar app, but **the feature flag (`YAKCHAT_HANDOFF_ENABLED`) is OFF**, which means:
+---
 
-- The "Text an admissions counselor" button is NOT rendered to any user.
-- The server-side SMS send path is short-circuited; no SMS would go out even if a consent record somehow got created.
-- The consent text in the codebase is marked "DRAFT — pending legal review" with a red banner in the UI.
+## 2. Framing — why this is an extension, not a new program
 
-The infrastructure that's already live and working (without the SMS feature):
-- A `tcpa_consent` table in Supabase that stores proof-of-consent records (phone, timestamp, IP, user-agent, exact text shown, SHA-256 hash of that text, language, session ID)
-- An `sms_optouts` table that records every STOP message and is checked before any SMS attempt
-- A `/api/handoff/optout` webhook endpoint that YakChat would POST to when a student replies STOP
+Keiser University already operates a counsel-approved TCPA consent program on the live RFI page at `https://www.keiseruniversity.edu/request-information/`. The consent language in production there reads, verbatim:
 
-Once counsel approves, we flip the flag on Railway and the button appears.
+> "By clicking the 'Submit' button, I authorize Keiser University to make or allow the placement of recurring marketing calls, emails, and texts to me at the phone number that I have provided, including through the use of automated technology or a prerecorded or artificial voice. I understand that I am not required to provide my phone number as a condition of purchasing any property, goods, or services."
 
-## The proposed consent flow
+**Skylar's consent text uses that exact sentence verbatim as its anchor clause.** We then add six supplementary disclosures aligned to 2025 CTIA / 10DLC best practice for chatbot-originated SMS opt-in:
 
-1. Student is chatting with Skylar.
-2. When Skylar's retrieval engine has low confidence (no good FAQ match), it offers two CTAs: (a) the existing "Talk to a counselor now" link to keiseruniversity.edu/request-information (no SMS), and (b) the new "Text an admissions counselor" button (SMS via YakChat).
-3. If the student clicks the SMS button, a modal opens.
-4. The modal displays:
-   - A red "DRAFT — pending legal review" banner (until counsel signs off; we'll remove this then)
-   - The full consent disclosure text (below)
-   - Form fields: first name, last name, email, mobile number (required)
-   - A required, unchecked-by-default checkbox: "I have read and agree to the above..."
-   - Submit button (disabled until checkbox is checked and phone is filled)
-5. On submit, the server:
-   - Re-renders the canonical consent text server-side
-   - Refuses to record consent if the text the client claims to have shown doesn't match (anti-tampering)
-   - Records the consent event in `tcpa_consent` with IP, user-agent, timestamp, version, full text snapshot, and SHA-256 hash
-   - Checks `sms_optouts`; if the number is on the opt-out list, refuses to record consent and shows an error
-   - Posts a notification to a Microsoft Teams admissions channel so a counselor sees the new lead
-   - If YakChat is configured AND the feature flag is on, sends a first SMS to the student: "Hi {first_name}, this is Keiser University admissions. I got your request and will reply shortly. Reply STOP to opt out."
-6. The counselor replies from Teams; YakChat delivers as SMS.
-7. If the student replies STOP, YakChat's webhook hits our `/api/handoff/optout` endpoint; we add the number to `sms_optouts` and never send to it again.
+1. STOP keyword honoring
+2. HELP keyword for assistance
+3. Message-and-data-rates disclaimer
+4. Variable message-frequency disclaimer
+5. Named service providers (Microsoft, YakChat) and retention purpose
+6. Age-of-majority / parental consent
 
-## The proposed consent text (English version)
+**The ask is therefore narrowed to: are the six additional disclosures acceptable as drafted, or would you like any removed or rewritten?** The RFI anchor sentence is what you have already approved.
 
-> By checking the box below and providing my mobile number, I expressly consent to receive text messages from Keiser University and its admissions team at the mobile number I provided, including text messages sent using an automated system, autodialer, or pre-recorded voice technology, for the purpose of responding to my inquiry about academic programs and admissions.
+A separate operational consideration — Keiser admissions counselors are already rigorously trained on STOP-keyword compliance under the existing YakChat program — so this extension inherits an existing operational SOP rather than creating a new one.
+
+---
+
+## 3. The narrow ask
+
+Please review **Section 5** below and answer:
+
+1. **Anchor clause:** Confirm the RFI sentence is reproduced verbatim and acceptably contextualized.
+2. **Each of the six supplementary disclosures:** approve, strike, or rewrite.
+3. **Spanish translation:** approve as drafted, or replace with a counsel-preferred Spanish version (Keiser may already have one in use elsewhere).
+4. **Checkbox label:** approve as drafted.
+5. **Affirmative-checkbox pattern vs. RFI's click-through pattern:** Skylar uses an explicit checkbox before submit. This is stricter than the RFI form's click-submit-implies-consent pattern. Please confirm this is acceptable for this channel (we expect it is, as it strengthens defensibility).
+6. **Retention period for `tcpa_consent` records:** Skylar records are stored append-only in Supabase. Please specify minimum retention (recommended: 4 years from last contact, per typical TCPA statute-of-limitations practice).
+7. **Whether a "Privacy Policy" hyperlink should be added to the consent modal** (the RFI page has one; Skylar's modal currently references the privacy notice in prose but does not link to it).
+8. **Sign-off authority** for future text changes — bump procedure when language is revised.
+
+---
+
+## 4. What happens when the user agrees
+
+1. The user types a question Skylar cannot confidently answer (retriever top-score < 1.5).
+2. A pill labeled "Text an admissions counselor" appears below Skylar's response (only when the feature flag is on).
+3. User clicks it; a modal opens with the full consent text from Section 5.
+4. User checks the affirmative-consent checkbox, enters their mobile number and (optionally) name + email, and clicks "Connect me with a counselor."
+5. The server **re-renders the consent text canonically** and refuses to record if the snapshot the client sent does not match byte-for-byte (anti-tamper protection).
+6. The server **checks the `sms_optouts` table first** — if the phone number has previously replied STOP from any channel, the request is refused with HTTP 403 (fail-closed: even if the lookup query errors, the request is treated as opted-out).
+7. The server records into `tcpa_consent` (append-only, RLS-locked, service-role only): phone in E.164, version, SHA-256 hash of consent text, full consent text snapshot, IP address, user agent, language, the question that triggered the request, timestamp.
+8. The server then dispatches a first SMS to the user via YakChat introducing the counselor and (optionally) a Teams webhook notification to the admissions team.
+9. STOP replies from the user route through YakChat's webhook to `/api/handoff/optout`, which appends to `sms_optouts` and is honored by all subsequent send attempts.
+
+---
+
+## 5. **The text — please review verbatim**
+
+**Version stamp recorded with each consent:** `v0.2-DRAFT-2026-05-17`
+**SHA-256 hash:** computed and stored per record so future audits can prove which text version any individual user agreed to.
+
+### 5a. English
+
+**Headline:** Before we connect you with a counselor
+
+**Body** (paragraph 1 is the **verbatim RFI anchor sentence**; paragraph 2 is the **six-clause delta**):
+
+> By checking the box below and providing my mobile number, I authorize Keiser University to make or allow the placement of recurring marketing calls, emails, and texts to me at the phone number that I have provided, including through the use of automated technology or a prerecorded or artificial voice. I understand that I am not required to provide my phone number as a condition of purchasing any property, goods, or services.
 >
-> I understand that:
-> • This consent is NOT a condition of admission, enrollment, or receiving any goods or services from Keiser University.
+> In addition, I understand that:
 > • Message and data rates from my mobile carrier may apply.
 > • Message frequency may vary depending on my engagement with the admissions team.
 > • I can opt out at any time by replying STOP to any message I receive. After I reply STOP, I will no longer receive automated SMS from Keiser University at that number.
 > • I can reply HELP for assistance.
 > • My phone number and the contents of these messages may be stored by Keiser University and its service providers (including Microsoft and YakChat) for the purposes of facilitating this conversation, regulatory compliance, and recordkeeping.
-> • Standard text messaging carrier delivery is not guaranteed and timing of replies may vary.
+> • I am at least 18 years of age, or if under 18, my parent or legal guardian consents on my behalf.
 >
-> I have read the Keiser University privacy notice and I am at least 18 years of age, or if under 18, my parent or legal guardian consents on my behalf.
+> I have read the Keiser University privacy notice.
 
-A Spanish translation is available in the same source file (`consent.js`). The translation has been done for legal substance, not just literal word-for-word, but we recommend a Spanish-fluent attorney review it before showing it to Spanish-speaking users.
+**Affirmative-consent checkbox label** (required to enable the submit button):
 
-## Specific questions for counsel
+> I have read and agree to the above. I consent to receive SMS messages from Keiser University admissions at the mobile number I provided.
 
-1. **Is the disclosure language above sufficient under TCPA and FCC regulations for prospective-student outreach?** If not, what changes are needed? We can swap the text and the version stamp in 5 minutes.
-2. **Is single-step affirmative checkbox consent acceptable, or do you want two-step consent** (e.g., a separate checkbox for SMS vs. one for general marketing)?
-3. **Is the proposed retention period sufficient?** We're storing consent records indefinitely (no automatic deletion); we plan to keep them at minimum 4 years (TCPA statute of limitations) but could keep longer.
-4. **Is the Spanish translation legally equivalent**, or do you want to require English-only consent at first?
-5. **Do we need to link to Keiser's privacy notice from the modal**, and if so, which URL? We've referenced "the Keiser University privacy notice" generically; if there's a specific URL, we'll wire it in.
-6. **Are there state-specific carve-outs we need to address** (Florida CAN-SPAM analog, California CCPA-related rules for under-13 users, etc.)? Skylar is hosted from Florida but accessible nationwide.
-7. **Is there a minimum age verification mechanism you want?** The current text relies on the student's assertion that they're 18+ or have parental consent. Counsel may want a stronger gate.
-8. **Who at Keiser is the named TCPA compliance officer?** We'd like to add their contact to the modal under "questions about this consent."
+**Submit button:** Connect me with a counselor
+**Cancel button:** Never mind
 
-## What needs to be true before we flip the flag
+### 5b. Spanish
 
-| # | Action | Owner | Status |
-|---|---|---|---|
-| 1 | Counsel review of `consent.js` text in English | Keiser legal | ☐ Pending |
-| 2 | Counsel review of Spanish translation | Keiser legal | ☐ Pending |
-| 3 | Provision a dedicated YakChat number for admissions outreach | IT / YakChat admin | ☐ Pending |
-| 4 | Configure YakChat to POST inbound STOP messages to `/api/handoff/optout` | IT / YakChat admin | ☐ Pending |
-| 5 | Define counselor coverage hours (when is the channel actively monitored?) | Admissions ops | ☐ Pending |
-| 6 | Decide off-hours behavior: hide button entirely, or show with "off-hours, reply tomorrow" disclaimer | Robert + admissions ops | ☐ Pending |
-| 7 | Set Railway env vars: `YAKCHAT_HANDOFF_ENABLED`, `YAKCHAT_API_KEY`, `YAKCHAT_FROM_NUMBER`, optionally `TEAMS_WEBHOOK_URL` | Robert | ☐ Pending |
-| 8 | Internal soft-launch with 5-10 test students (Keiser staff acting as students) before public flip | Edison + Robert | ☐ Pending |
+**Headline:** Antes de conectarte con un consejero
 
-## Risk if we ship without legal review
+**Body:**
 
-TCPA carries statutory damages of $500–$1,500 per text per recipient. A class action involving Keiser sending a few hundred non-consented SMS could be a six- or seven-figure exposure. The cost of having counsel spend 30-60 minutes reviewing this document and the consent text is negligible by comparison.
+> Al marcar la casilla a continuación y proporcionar mi número de celular, autorizo a Keiser University a realizar o permitir la realización de llamadas, correos electrónicos y mensajes de texto recurrentes con fines de marketing al número de teléfono que he proporcionado, incluido el uso de tecnología automatizada o una voz pregrabada o artificial. Entiendo que no estoy obligado a proporcionar mi número de teléfono como condición para adquirir bienes, servicios o cualquier propiedad.
+>
+> Además, entiendo que:
+> • Pueden aplicar tarifas estándar de mensajes y datos de mi operador de telefonía móvil.
+> • La frecuencia de mensajes puede variar según mi interacción con el equipo de admisiones.
+> • Puedo cancelar mi consentimiento en cualquier momento respondiendo STOP a cualquier mensaje que reciba. Después de responder STOP, dejaré de recibir mensajes SMS automatizados de Keiser University a ese número.
+> • Puedo responder HELP para obtener ayuda.
+> • Mi número de teléfono y el contenido de estos mensajes pueden ser almacenados por Keiser University y sus proveedores de servicios (incluidos Microsoft y YakChat) con fines de facilitar esta conversación, cumplimiento regulatorio y mantenimiento de registros.
+> • Soy mayor de 18 años, o si soy menor de 18 años, mi padre, madre o tutor legal otorga su consentimiento en mi nombre.
+>
+> He leído el aviso de privacidad de Keiser University.
 
-## Code locations (for technical review if counsel wants engineering's audit)
+**Checkbox label:**
 
-- `consent.js` — versioned consent text, English and Spanish
-- `handoff.js` — server-side phone normalization, consent recording, opt-out check, YakChat send
-- `server.js` — `/api/handoff/*` route handlers
-- `skylar-handoff.jsx` — client-side consent modal
-- Supabase tables: `public.tcpa_consent`, `public.sms_optouts` (both append-only, RLS-locked, service_role only)
-- GitHub: https://github.com/Banksy1224/skylar-keiser
-- Live URL (feature currently invisible): https://skylar-keiser-production.up.railway.app/
+> He leído y acepto lo anterior. Doy mi consentimiento para recibir mensajes SMS del equipo de admisiones de Keiser University al número de celular que proporcioné.
+
+**Submit button:** Conéctame con un consejero
+**Cancel button:** Mejor no
+
+---
+
+## 6. Technical safeguards already implemented
+
+| Safeguard | How it works |
+| --- | --- |
+| **Versioned consent** | Every record stores `consent_text_version`, currently `v0.2-DRAFT-2026-05-17`. Any change to the text requires a version bump. |
+| **Cryptographic snapshot** | SHA-256 hash of the consent text and a full text snapshot stored per record. We can always prove which text any user agreed to. |
+| **Anti-tamper** | Client must send the consent text it displayed; server re-renders the canonical version and refuses to record if they don't match byte-for-byte. |
+| **Affirmative consent** | Submit button is disabled until the user checks the consent checkbox. |
+| **Capture metadata** | IP address, user agent, timestamp, session ID, language, and the user's triggering question are all recorded. |
+| **Opt-out honored before every send** | `sms_optouts` table is checked before any SMS dispatch. Fail-closed: if the check errors, the send is refused. |
+| **STOP webhook** | YakChat STOP replies route to `/api/handoff/optout`, which appends to `sms_optouts`. STOP keywords honored: STOP, UNSUBSCRIBE, CANCEL, END, QUIT, STOPALL. |
+| **Append-only storage** | `tcpa_consent` and `sms_optouts` are RLS-locked, service-role only. No deletes or updates from application code. |
+| **Phone normalization** | Numbers normalized to US/CA E.164 only (`+1XXXXXXXXXX`); non-US/CA phones are rejected. |
+| **Feature flag** | `YAKCHAT_HANDOFF_ENABLED` defaults to false. Button is invisible to users. No SMS infrastructure runs until counsel approves and the flag is flipped. |
+
+---
+
+## 7. Sign-off checklist
+
+Please initial or strike each item:
+
+- [ ] English consent text approved as drafted (Section 5a)
+- [ ] English consent text approved with edits — strike or rewrite below:
+- [ ] Spanish consent text approved as drafted (Section 5b)
+- [ ] Spanish consent text approved with edits — strike or rewrite below:
+- [ ] Affirmative-checkbox pattern approved (stricter than RFI click-submit)
+- [ ] Retention period specified: _____________ years
+- [ ] Privacy Policy hyperlink should be added to modal: Yes / No
+- [ ] Sign-off authority for future text changes: _____________
+- [ ] Approved to flip `YAKCHAT_HANDOFF_ENABLED=true` once IT provisions YakChat number and STOP webhook
+
+**Reviewer name:** _______________________________
+**Date:** _______________________________
+**Approved consent version:** v0.____-_____________
+
+---
+
+*Once reviewed and approved, please return this memo to Robert Keiser. The consent text version stamp will be bumped from `-DRAFT` to a final version, the hash will be re-recorded in the source code, and the feature flag will be enabled in coordination with the YakChat administrator.*

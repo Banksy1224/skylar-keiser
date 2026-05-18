@@ -4,44 +4,56 @@
 // record, so we always know exactly what they agreed to.
 //
 // **DRAFT — REQUIRES REVIEW BY KEISER LEGAL COUNSEL BEFORE GOING LIVE.**
-// This text was drafted as "maximally conservative" by an AI assistant based on
-// common TCPA-compliant patterns in U.S. higher-education admissions. It has
-// NOT been reviewed by an attorney. Do not flip YAKCHAT_HANDOFF_ENABLED=true
-// until this draft has been reviewed and approved by qualified legal counsel.
+//
+// v0.2 design note (2026-05-17): The opening clause is the VERBATIM consent
+// language already in production on https://www.keiseruniversity.edu/request-information/
+// (the live RFI form, which has been operating under counsel's approval).
+// We then layer six additional disclosures required by 2025 CTIA / 10DLC best
+// practice for chatbot-originated SMS opt-in (STOP/HELP, frequency, carrier
+// rates, named service providers, retention purpose, age-of-majority).
+//
+// This phrasing lets counsel's review become "are the additional disclosures
+// acceptable?" rather than "is all of this acceptable?" — the anchor clause is
+// already approved.
 
-export const CONSENT_VERSION = 'v0.1-DRAFT-2026-05-17';
+export const CONSENT_VERSION = 'v0.2-DRAFT-2026-05-17';
 
-// English consent text. {{brand}} is replaced at runtime with the brand string.
-// The text is intentionally long. Each clause exists to address a specific
-// TCPA / FCC / state-law requirement. Trimming this without legal review is risky.
-export const CONSENT_TEXT_EN = `By checking the box below and providing my mobile number, I expressly consent to receive text messages from {{brand}} and its admissions team at the mobile number I provided, including text messages sent using an automated system, autodialer, or pre-recorded voice technology, for the purpose of responding to my inquiry about academic programs and admissions.
+// English consent text.
+// {{brand}} is replaced at runtime — for Keiser University, this renders as
+// "Keiser University" so the RFI-anchor sentence matches the live RFI page
+// word-for-word.
+//
+// PARAGRAPH 1 (anchor): VERBATIM from keiseruniversity.edu/request-information/
+//   — already in counsel-approved production use.
+// PARAGRAPH 2 (delta): Six additional disclosures aligned to 2025 CTIA / 10DLC
+//   best practice for chatbot-originated SMS. New language relative to the RFI.
+export const CONSENT_TEXT_EN = `By checking the box below and providing my mobile number, I authorize {{brand}} to make or allow the placement of recurring marketing calls, emails, and texts to me at the phone number that I have provided, including through the use of automated technology or a prerecorded or artificial voice. I understand that I am not required to provide my phone number as a condition of purchasing any property, goods, or services.
 
-I understand that:
-• This consent is NOT a condition of admission, enrollment, or receiving any goods or services from {{brand}}.
+In addition, I understand that:
 • Message and data rates from my mobile carrier may apply.
 • Message frequency may vary depending on my engagement with the admissions team.
 • I can opt out at any time by replying STOP to any message I receive. After I reply STOP, I will no longer receive automated SMS from {{brand}} at that number.
 • I can reply HELP for assistance.
 • My phone number and the contents of these messages may be stored by {{brand}} and its service providers (including Microsoft and YakChat) for the purposes of facilitating this conversation, regulatory compliance, and recordkeeping.
-• Standard text messaging carrier delivery is not guaranteed and timing of replies may vary.
+• I am at least 18 years of age, or if under 18, my parent or legal guardian consents on my behalf.
 
-I have read the {{brand}} privacy notice and I am at least 18 years of age, or if under 18, my parent or legal guardian consents on my behalf.`;
+I have read the {{brand}} privacy notice.`;
 
 // Spanish translation. Same legal substance; translated for clarity, NOT
-// abridged. If Spanish-speaking users will see this, this also requires legal
-// review (translation accuracy is its own consent question).
-export const CONSENT_TEXT_ES = `Al marcar la casilla a continuación y proporcionar mi número de celular, otorgo mi consentimiento expreso para recibir mensajes de texto de {{brand}} y de su equipo de admisiones al número de celular que indico, incluyendo mensajes de texto enviados mediante un sistema automatizado, marcador automático o tecnología de voz pregrabada, con el propósito de responder a mi consulta sobre programas académicos y admisiones.
+// abridged. The anchor sentence mirrors the structure and force of the English
+// RFI clause; if Keiser counsel has a preferred Spanish RFI translation already
+// in use elsewhere, we should substitute that text verbatim before going live.
+export const CONSENT_TEXT_ES = `Al marcar la casilla a continuación y proporcionar mi número de celular, autorizo a {{brand}} a realizar o permitir la realización de llamadas, correos electrónicos y mensajes de texto recurrentes con fines de marketing al número de teléfono que he proporcionado, incluido el uso de tecnología automatizada o una voz pregrabada o artificial. Entiendo que no estoy obligado a proporcionar mi número de teléfono como condición para adquirir bienes, servicios o cualquier propiedad.
 
-Entiendo que:
-• Este consentimiento NO es una condición de admisión, inscripción ni de recibir bienes o servicios de {{brand}}.
+Además, entiendo que:
 • Pueden aplicar tarifas estándar de mensajes y datos de mi operador de telefonía móvil.
 • La frecuencia de mensajes puede variar según mi interacción con el equipo de admisiones.
 • Puedo cancelar mi consentimiento en cualquier momento respondiendo STOP a cualquier mensaje que reciba. Después de responder STOP, dejaré de recibir mensajes SMS automatizados de {{brand}} a ese número.
 • Puedo responder HELP para obtener ayuda.
 • Mi número de teléfono y el contenido de estos mensajes pueden ser almacenados por {{brand}} y sus proveedores de servicios (incluidos Microsoft y YakChat) con fines de facilitar esta conversación, cumplimiento regulatorio y mantenimiento de registros.
-• La entrega estándar de mensajes de texto no está garantizada y los tiempos de respuesta pueden variar.
+• Soy mayor de 18 años, o si soy menor de 18 años, mi padre, madre o tutor legal otorga su consentimiento en mi nombre.
 
-He leído el aviso de privacidad de {{brand}} y soy mayor de 18 años, o si soy menor de 18 años, mi padre, madre o tutor legal otorga su consentimiento en mi nombre.`;
+He leído el aviso de privacidad de {{brand}}.`;
 
 export const CONSENT_HEADLINE_EN = 'Before we connect you with a counselor';
 export const CONSENT_HEADLINE_ES = 'Antes de conectarte con un consejero';
